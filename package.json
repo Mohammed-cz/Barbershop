@@ -1,0 +1,11 @@
+{
+	"name": "barber-shop",
+	"scripts": {
+		"start": "node server"
+	},
+	"dependencies": {
+		"colors": "*",
+		"cors": "^2.8.6",
+		"express": "*"
+	}
+}

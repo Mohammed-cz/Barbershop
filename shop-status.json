@@ -1,0 +1,40 @@
+{
+  "isOpen": false,
+  "weeklySchedule": {
+    "0": {
+      "isOpen": true,
+      "openTime": "09:00",
+      "closeTime": "16:00"
+    },
+    "1": {
+      "isOpen": true,
+      "openTime": "09:00",
+      "closeTime": "19:00"
+    },
+    "2": {
+      "isOpen": true,
+      "openTime": "09:00",
+      "closeTime": "19:00"
+    },
+    "3": {
+      "isOpen": true,
+      "openTime": "09:00",
+      "closeTime": "19:00"
+    },
+    "4": {
+      "isOpen": false,
+      "openTime": "09:00",
+      "closeTime": "19:00"
+    },
+    "5": {
+      "isOpen": false,
+      "openTime": "09:00",
+      "closeTime": "14:00"
+    },
+    "6": {
+      "isOpen": false,
+      "openTime": "09:00",
+      "closeTime": "19:00"
+    }
+  }
+}

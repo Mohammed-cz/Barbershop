@@ -1,0 +1,15 @@
+{
+  "name": "ניהול תורים במספרה",
+  "short_name": "תורים מספרה",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#2c3e50",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
