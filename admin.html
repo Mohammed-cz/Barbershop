@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>לוח בקרה - ניהול תורים (لوحة التحكم - إدارة المواعيد)</title>
+    <!-- مكتبة الرسم البياني Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -51,7 +53,53 @@
             font-size: 14px;
             transition: background 0.3s;
         }
-        /* أزرار التنقل بين التبويبات الثلاثة */
+        /* زر إظهار/إخفاء الإحصائيات والرسوم البيانية */
+        .btn-toggle-stats {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto 20px auto;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+        .btn-toggle-stats:hover {
+            background-color: #2980b9;
+        }
+        /* قسم الإحصائيات المخفي افتراضياً */
+        #statsSection {
+            display: none;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        .stats-cards {
+            display: flex;
+            gap: 15px;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            text-align: center;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            flex: 1;
+            min-width: 180px;
+            background: white;
+            border: 1px solid #cbd5e0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .card-today { border-right: 5px solid #3498db; }
+        .card-month { border-right: 5px solid #2ecc71; }
+
+        /* أزرار التنقل بين التبويبات */
         .nav-tabs {
             display: flex;
             gap: 10px;
@@ -95,37 +143,6 @@
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        /* كروت الإحصائيات والأرقام */
-        .stats-bar {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .stat-card {
-            flex: 1;
-            min-width: 200px;
-            background: white;
-            border: 1px solid #cbd5e0;
-            border-right: 5px solid #3498db;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .stat-card.green {
-            border-right-color: #2ecc71;
-        }
-        .stat-title {
-            font-size: 13px;
-            color: #718096;
-            margin-bottom: 5px;
-        }
-        .stat-value {
-            font-size: 22px;
-            font-weight: bold;
-            color: #2d3748;
         }
 
         /* أزرار اختيار الأيام */
@@ -260,7 +277,33 @@
             <div style="font-size: 14px; color: #555;" id="currentDateDisplay"></div>
         </div>
 
-        <!-- أزرار التنقل الثلاثة -->
+        <!-- زر إظهار وإخفاء الإحصائيات والرسوم البيانية -->
+        <button class="btn-toggle-stats" onclick="toggleStatsSection()">
+            📊 📈 הצג/הסתר סטטיסטיקות וגרף (إظهار/إخفاء الإحصائيات والرسوم البيانية)
+        </button>
+
+        <!-- قسم الإحصائيات والرسم البياني (مخفي افتراضياً) -->
+        <div id="statsSection">
+            <h2 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">📈 סטטיסטיקת לקוחות (إحصائيات الزبائن)</h2>
+            
+            <div class="stats-cards">
+                <div class="stat-card card-today">
+                    <div class="stat-title" style="color: #3498db; font-weight: bold;">היום (اليوم)</div>
+                    <div class="stat-value" id="todayCount" style="font-size: 24px; font-weight: bold; color: #2d3748; margin-top: 5px;">0</div>
+                </div>
+                <div class="stat-card card-month">
+                    <div class="stat-title" style="color: #2ecc71; font-weight: bold;">החודש (هذا الشهر)</div>
+                    <div class="stat-value" id="monthCount" style="font-size: 24px; font-weight: bold; color: #2d3748; margin-top: 5px;">0</div>
+                </div>
+            </div>
+
+            <!-- حاوية الرسم البياني -->
+            <div style="position: relative; height: 260px; background: white; padding: 10px; border-radius: 8px;">
+                <canvas id="barberChart"></canvas>
+            </div>
+        </div>
+
+        <!-- أزرار التنقل بين التبويبات -->
         <div class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('daily')" id="btnDailyTab">📅 תורים להיום (البرنامج اليومي)</button>
             <button class="tab-btn" onclick="switchTab('weeklyBookings')" id="btnWeeklyBookingsTab">📋 תורים שבועיים (الحجوزات الأسبوعية)</button>
@@ -291,15 +334,15 @@
 
         <!-- التبويبة 2: الحجوزات الأسبوعية مع إحصائيات الأعداد وأزرار الأيام -->
         <div id="weeklyBookingsSection" class="section-content">
-            <!-- شريط الإحصائيات وعدد الزبائن -->
-            <div class="stats-bar">
-                <div class="stat-card green">
+            <!-- شريط الإحصائيات وعدد الزبائن للأسبوع -->
+            <div class="stats-bar" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <div class="stat-card" style="flex: 1; min-width: 200px; background: white; border: 1px solid #cbd5e0; border-right: 5px solid #2ecc71; padding: 15px; border-radius: 8px;">
                     <div class="stat-title">👥 סך הכל לקוחות השבוע (إجمالي زبائن الأسبوع):</div>
-                    <div class="stat-value" id="totalWeekClientsCount">0 לקוחות (زبائن)</div>
+                    <div class="stat-value" id="totalWeekClientsCount" style="font-size: 22px; font-weight: bold; color: #2d3748;">0 לקוחות (زبائن)</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" style="flex: 1; min-width: 200px; background: white; border: 1px solid #cbd5e0; border-right: 5px solid #3498db; padding: 15px; border-radius: 8px;">
                     <div class="stat-title">📌 מספר הלקוחות ביום הנבחר (زبائن اليوم المختار):</div>
-                    <div class="stat-value" id="selectedDayClientsCount">0 לקוחות (زبائن)</div>
+                    <div class="stat-value" id="selectedDayClientsCount" style="font-size: 22px; font-weight: bold; color: #2d3748;">0 לקוחות (زبائن)</div>
                 </div>
             </div>
 
@@ -332,26 +375,6 @@
                     <div id="noSelectedDayData" class="no-data" style="display: none;">אין תורים ביום זה. (لا توجد حجوزات في هذا اليوم)</div>
                 </div>
             </div>
-
-            <!-- جدول كافة حجوزات الأسبوع الكاملة -->
-            <div class="card">
-                <h3>📋 כל התורים השבועיים (سجل كافة الحجوزات الأسبوعية)</h3>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>שם הלקוח (اسم الزبون)</th>
-                                <th>מספר טלפון (رقم الهاتف)</th>
-                                <th>תאריך (التاريخ)</th>
-                                <th>שעה (الساعة)</th>
-                                <th>פעולות (إجراءات)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="allWeeklyBookingsBody"></tbody>
-                    </table>
-                </div>
-                <div id="noAllWeeklyData" class="no-data" style="display: none;">אין תורים רשומים השבוע. (لا توجد حجوزات مسجلة بالأسبوع)</div>
-            </div>
         </div>
 
         <!-- التبويبة 3: إعدادات ساعات العمل فقط -->
@@ -371,6 +394,7 @@
     <script>
         let shopOpenState = false;
         let selectedDayIndex = new Date().getDay();
+        let barberChart = null;
 
         const dayNamesHebrew = {
             0: 'יום ראשון (الأحد)',
@@ -391,6 +415,81 @@
             5: 'שישי (الجمعة)',
             6: 'שבת (السبت)'
         };
+
+        // دالة إظهار وإخفاء قسم الإحصائيات والرسم البياني
+        function toggleStatsSection() {
+            const section = document.getElementById('statsSection');
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                renderBarberStats(); // رسم البيان عند الفتح
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // دالة حساب ورسم المخطط البياني وإحصائيات الزبائن
+        function renderBarberStats() {
+            const stats = JSON.parse(localStorage.getItem('barberStats')) || { daily: {}, monthly: {} };
+            const bookings = JSON.parse(localStorage.getItem('barberBookings')) || [];
+            const today = new Date().toISOString().split('T')[0];
+            const currentMonth = today.substring(0, 7);
+
+            // حساب زبائن اليوم
+            const todayBookingsCount = bookings.filter(b => b.date === today).length;
+            const todayArchivedCount = stats.daily[today] || 0;
+            const totalToday = todayBookingsCount + todayArchivedCount;
+
+            // حساب زبائن الشهر الحالي
+            const monthArchivedCount = stats.monthly[currentMonth] || 0;
+            const monthActiveBookingsCount = bookings.filter(b => b.date.startsWith(currentMonth)).length;
+            const totalMonth = monthArchivedCount + monthActiveBookingsCount;
+
+            // تحديث البطاقات
+            document.getElementById('todayCount').textContent = totalToday;
+            document.getElementById('monthCount').textContent = totalMonth;
+
+            // بيانات آخر 7 أيام للرسم البياني
+            const last7Days = [];
+            const counts7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                
+                last7Days.push(dateStr.slice(5)); // عرض الشهر واليوم (MM-DD)
+                const dayArchived = stats.daily[dateStr] || 0;
+                const dayActive = bookings.filter(b => b.date === dateStr).length;
+                counts7Days.push(dayArchived + dayActive);
+            }
+
+            const ctx = document.getElementById('barberChart').getContext('2d');
+            if (barberChart) barberChart.destroy();
+
+            barberChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: last7Days,
+                    datasets: [{
+                        label: 'מספר לקוחות (عدد الزبائن)',
+                        data: counts7Days,
+                        backgroundColor: '#3498db',
+                        borderColor: '#2980b9',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
 
         function switchTab(tabName) {
             const dailySec = document.getElementById('dailySection');
@@ -417,7 +516,6 @@
                 btnWeeklyBookings.classList.add('active');
                 renderDayButtons();
                 showBookingsForSelectedDay(selectedDayIndex);
-                renderAllWeeklyBookings();
             } else if (tabName === 'weeklySchedule') {
                 weeklyScheduleSec.classList.add('active');
                 btnWeeklySchedule.classList.add('active');
@@ -470,8 +568,10 @@
             let noDataMsg = document.getElementById('noSelectedDayData');
             let title = document.getElementById('selectedDayTitle');
             let dayClientsCountLabel = document.getElementById('selectedDayClientsCount');
+            let totalWeekClientsLabel = document.getElementById('totalWeekClientsCount');
 
-            title.textContent = `📋 תורים ליום (${dayNamesHebrew[dayIndex]}):`;
+            totalWeekClientsLabel.textContent = `${bookings.length} לקוחות (زبائن)`;
+            title.textContent = `📋 תורים لיום (${dayNamesHebrew[dayIndex]}):`;
             tbody.innerHTML = '';
 
             let dayBookings = bookings.filter(b => {
@@ -488,25 +588,6 @@
                 dayBookings.forEach((booking) => {
                     let globalIndex = bookings.indexOf(booking);
                     appendBookingRow(tbody, booking, globalIndex);
-                });
-            }
-        }
-
-        function renderAllWeeklyBookings() {
-            let bookings = JSON.parse(localStorage.getItem('barberBookings')) || [];
-            let tbody = document.getElementById('allWeeklyBookingsBody');
-            let noDataMsg = document.getElementById('noAllWeeklyData');
-            let totalWeekClientsLabel = document.getElementById('totalWeekClientsCount');
-
-            totalWeekClientsLabel.textContent = `${bookings.length} לקוחות (زبائن)`;
-            tbody.innerHTML = '';
-
-            if (bookings.length === 0) {
-                noDataMsg.style.display = 'block';
-            } else {
-                noDataMsg.style.display = 'none';
-                bookings.forEach((booking, index) => {
-                    appendBookingRow(tbody, booking, index);
                 });
             }
         }
@@ -614,7 +695,7 @@
             const dayNum = String(today.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${dayNum}`;
             
-            document.getElementById('currentDateDisplay').textContent = `תאריך היום (تاريخ اليوم): ${todayStr}`;
+            document.getElementById('currentDateDisplay').textContent = `תאריך اليوم (تاريخ اليوم): ${todayStr}`;
             const todayDayOfWeek = today.getDay();
             document.getElementById('todayNameLabel').textContent = dayNamesHebrew[todayDayOfWeek] || todayStr;
 
@@ -640,7 +721,8 @@
             let cleanPhone = booking.phone.replace(/\D/g, '');
             if (cleanPhone.startsWith('0')) cleanPhone = '972' + cleanPhone.substring(1);
             
-            let waMessage = `שלום ${booking.name}, תذكير بموعدك في صالون الحلاقة بتاريخ ${booking.date} الساعة ${booking.time}. بانتظارك!`;
+            // رسالة التذكير باللغة العبرية فقط
+            let waMessage = `שלום ${booking.name}, תזכורת לתור שלך במספרה בתאריך ${booking.date} בשעה ${booking.time}. מחכים לך!`;
             let waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
 
             let tr = document.createElement('tr');
@@ -664,7 +746,6 @@
                 localStorage.setItem('barberBookings', JSON.stringify(bookings));
                 loadBookings();
                 showBookingsForSelectedDay(selectedDayIndex);
-                renderAllWeeklyBookings();
             }
         }
 

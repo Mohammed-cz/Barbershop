@@ -97,3 +97,16 @@ input:focus {
     display: none;
     font-weight: bold;
 }
+
+/* 🚫 إخفاء شارة Netlify والأداة التي تظهر أسفل الشاشة بالكامل */
+iframe[src*="netlify"],
+[data-netlify-deploy-id],
+.netlify-badge,
+#netlify-badge,
+netlify-connection-indicator,
+div[class*="netlify"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
