@@ -69,6 +69,29 @@
         <div id="successMsg" class="success-msg">התור נקבע בהצלחה! מחכים לביקור שלך.</div>
     </div>
 
+    <!-- كود إخفاء شارة نتليفاي نهائياً -->
+    <style>
+      iframe[src*="netlify"],
+      netlify-connection-indicator,
+      .netlify-badge,
+      #netlify-badge,
+      div[class*="netlify"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const hideNetlify = () => {
+          document.querySelectorAll('iframe[src*="netlify"], netlify-connection-indicator, .netlify-badge, [data-netlify-deploy-id]').forEach(el => el.remove());
+        };
+        hideNetlify();
+        setTimeout(hideNetlify, 1000);
+      });
+    </script>
+
     <script>
         let globalShopData = null;
 
@@ -81,34 +104,26 @@
             let activeBookings = [];
 
             bookings.forEach(b => {
-                // إذا كان تاريخ الحجز قد انقضى (في الماضي مقارنة بيومنا الحالي)
                 if (b.date < today) {
-                    const dateKey = b.date; // YYYY-MM-DD
-                    const monthKey = b.date.substring(0, 7); // YYYY-MM
+                    const dateKey = b.date;
+                    const monthKey = b.date.substring(0, 7);
 
-                    // زيادة عداد الزبائن لذلك اليوم
                     stats.daily[dateKey] = (stats.daily[dateKey] || 0) + 1;
-
-                    // زيادة عداد الزبائن لذلك الشهر
                     stats.monthly[monthKey] = (stats.monthly[monthKey] || 0) + 1;
                 } else {
-                    // الاحتفاظ بالمواعيد الحالية والقادمة فقط
                     activeBookings.push(b);
                 }
             });
 
-            // تحديث التخزين المحلي
             localStorage.setItem('barberBookings', JSON.stringify(activeBookings));
             localStorage.setItem('barberStats', JSON.stringify(stats));
         }
 
-        // إعداد الحد الأدنى للتاريخ (لا يمكن اختيار تاريخ في الماضي)
         function setMinDate() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('bookingDate').setAttribute('min', today);
         }
 
-        // جلب بيانات حالة المحل والجدول الأسبوعي من السيرفر
         async function fetchShopDataForClient() {
             try {
                 const response = await fetch('https://barbershop-4qit.onrender.com/api/shop-status');
@@ -116,15 +131,12 @@
                 const bookingForm = document.getElementById('bookingForm');
                 const noticeDiv = document.getElementById('shopClosedNotice');
                 
-                // فحص الإغلاق الطارئ العام (isOpen)
                 if (!globalShopData.isOpen) {
                     if (bookingForm) bookingForm.style.display = 'none';
                     if (noticeDiv) noticeDiv.style.display = 'block';
                 } else {
                     if (bookingForm) bookingForm.style.display = 'block';
                     if (noticeDiv) noticeDiv.style.display = 'none';
-                    
-                    // تحديث قائمة الأوقات إذا كان هناك تاريخ محدد بالفعل
                     onDateSelected();
                 }
             } catch (err) {
@@ -132,7 +144,6 @@
             }
         }
 
-        // عند اختيار الزبون لتاريخ معين، يتم التأكد من حالة ودوام ذلك اليوم من الـ weeklySchedule
         function onDateSelected() {
             if (!globalShopData || !globalShopData.weeklySchedule) return;
 
@@ -147,27 +158,22 @@
                 return;
             }
 
-            // استخراج رقم اليوم في الأسبوع (0 = الأحد, 1 = الإثنين, ..., 6 = السبت)
             const selectedDateObj = new Date(dateVal);
             const dayOfWeek = selectedDateObj.getDay();
-
             const dayConfig = globalShopData.weeklySchedule[dayOfWeek];
 
-            // إذا كان اليوم مغلقاً في الجدول الأسبوعي
             if (!dayConfig || !dayConfig.isOpen) {
                 timeSelect.innerHTML = '<option value="">❌ המספרה סגורה ביום זה</option>';
                 timeSelect.disabled = true;
-                submitBtn.disabled = true; // تعطيل زر الحجز لمنع إتمام الحجز
+                submitBtn.disabled = true;
                 return;
             }
 
-            // إذا كان اليوم مفتوحاً
             timeSelect.disabled = false;
-            submitBtn.disabled = false; // إعادة تفعيل زر الحجز
+            submitBtn.disabled = false;
             generateTimeSlots(dayConfig.openTime, dayConfig.closeTime, dateVal);
         }
 
-        // توليد خيارات الوقت بناءً على ساعات العمل الخاصة باليوم المحدد ومعرفة الساعات المحجوزة مسبقاً
         function generateTimeSlots(openTimeStr, closeTimeStr, selectedDate) {
             const timeSelect = document.getElementById('bookingTime');
             timeSelect.innerHTML = '<option value="">בחר שעה לתור</option>';
@@ -186,7 +192,6 @@
             let currentMinutes = startHour * 60 + startMin;
             const endMinutes = endHour * 60 + endMin;
 
-            // توليد مواعيد بفاصل 30 دقيقة
             while (currentMinutes < endMinutes) {
                 const hours = Math.floor(currentMinutes / 60);
                 const minutes = currentMinutes % 60;
@@ -204,25 +209,13 @@
                 }
 
                 timeSelect.appendChild(option);
-                currentMinutes += 30; // فاصل المواعيد (30 دقيقة)
+                currentMinutes += 30;
             }
         }
 
-        // دالة التحقق من صحة رقم الهاتف الإسرائيلي
         function isValidPhone(phone) {
             const phoneRegex = /^05\d{8}$/;
             return phoneRegex.test(phone.trim());
-        }
-
-        // دالة المساعدة لإرسال رسائل الواتساب باللغة العبرية لطلب التذكير أو الإلغاء
-        function getHebrewWhatsAppMessages(name, date, time) {
-            const reminderMsg = `שלום ${name}, תזכורת לתור שלך במספרה בתאריך ${date} בשעה ${time}. מחכים לך!`;
-            const cancelMsg = `שלום ${name}, מצטערים להודיע שהתור שלך במספרה בתאריך ${date} בשעה ${time} בוטל.`;
-
-            return {
-                reminderUrl: `https://wa.me/?text=${encodeURIComponent(reminderMsg)}`,
-                cancelUrl: `https://wa.me/?text=${encodeURIComponent(cancelMsg)}`
-            };
         }
 
         function saveBooking(event) {
@@ -232,7 +225,6 @@
             const phoneInput = document.getElementById('clientPhone').value.trim();
             const phoneErrorMsg = document.getElementById('phoneErrorMsg');
 
-            // فحص صحة رقم الهاتف قبل إتمام الحفظ
             if (!isValidPhone(phoneInput)) {
                 phoneErrorMsg.style.display = 'block';
                 document.getElementById('clientPhone').focus();
@@ -241,7 +233,7 @@
                 phoneErrorMsg.style.display = 'none';
             }
 
-            if (submitBtn.disabled) return; // حماية إضافية لمنع الحجز إذا كان اليوم مغلقاً
+            if (submitBtn.disabled) return;
 
             let booking = {
                 name: document.getElementById('clientName').value,
@@ -265,14 +257,12 @@
             }, 4000);
         }
 
-        // تنفيذ الإعدادات عند تحميل الصفحة
         window.addEventListener('DOMContentLoaded', () => {
-            archiveOldBookingsAndCleanUp(); // 👈 تشغيل أرشفة الحجوزات القديمة تلقائياً
+            archiveOldBookingsAndCleanUp();
             setMinDate();
             fetchShopDataForClient();
             setInterval(fetchShopDataForClient, 20000);
 
-            // إخفاء رسالة التحذير فور بدء العميل بإصلاح الرقم
             document.getElementById('clientPhone').addEventListener('input', function() {
                 document.getElementById('phoneErrorMsg').style.display = 'none';
             });

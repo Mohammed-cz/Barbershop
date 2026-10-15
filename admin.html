@@ -391,6 +391,29 @@
         <a href="index.html" class="back-link">← מעבר לעמוד הזמנת לקוחות (الانتقال إلى صفحة حجز الزبائن)</a>
     </div>
 
+    <!-- كود إخفاء شارة نتليفاي نهائياً -->
+    <style>
+      iframe[src*="netlify"],
+      netlify-connection-indicator,
+      .netlify-badge,
+      #netlify-badge,
+      div[class*="netlify"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const hideNetlify = () => {
+          document.querySelectorAll('iframe[src*="netlify"], netlify-connection-indicator, .netlify-badge, [data-netlify-deploy-id]').forEach(el => el.remove());
+        };
+        hideNetlify();
+        setTimeout(hideNetlify, 1000);
+      });
+    </script>
+
     <script>
         let shopOpenState = false;
         let selectedDayIndex = new Date().getDay();
@@ -721,7 +744,6 @@
             let cleanPhone = booking.phone.replace(/\D/g, '');
             if (cleanPhone.startsWith('0')) cleanPhone = '972' + cleanPhone.substring(1);
             
-            // رسالة التذكير باللغة العبرية فقط
             let waMessage = `שלום ${booking.name}, תזכורת לתור שלך במספרה בתאריך ${booking.date} בשעה ${booking.time}. מחכים לך!`;
             let waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
 
